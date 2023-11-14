@@ -265,15 +265,78 @@ P.S.: количество собираемых метрик должно быт
 
 а) работающий код python3-скрипта
 
-Приложен в текущий репозиторий
+```
+
+import json
+import time
+from datetime import datetime
+import os
+
+def get_network_connections():
+    with open('/proc/net/tcp', 'r') as f:
+        return len(f.readlines()) - 1  # Вычитаем одну строку заголовка
+
+def get_cpu_count():
+    return os.cpu_count()
+
+def get_swap_size():
+    with open('/proc/meminfo', 'r') as f:
+        for line in f:
+            if line.startswith('SwapTotal'):
+                return int(line.split()[1])
+
+def collect_metrics():
+    timestamp = int(time.time())
+    uptime = float(open('/proc/uptime').readline().split()[0])
+    load_avg = open('/proc/loadavg').readline().split()[:3]
+    memory_total = float(open('/proc/meminfo').readline().split()[1])
+    
+    network_connections = get_network_connections()
+    cpu_count = get_cpu_count()
+    swap_size = get_swap_size()
+
+    metrics = {
+        "timestamp": timestamp,
+        "uptime": uptime,
+        "load_avg": load_avg,
+        "memory_total_kb": memory_total,
+        "network_connections": network_connections,
+        "cpu_count": cpu_count,
+        "swap_size_kb": swap_size
+    }
+
+    log_filename = datetime.now().strftime("/var/log/%Y-%m-%d-awesome-monitoring.log")
+    with open(log_filename, "a") as log_file:
+        log_file.write(json.dumps(metrics) + "\n")
+
+if __name__ == "__main__":
+    collect_metrics()
+
+```
 
 б) конфигурацию cron-расписания
 
-Приложен в текущий репозиторий
+```
+
+* * * * * /usr/bin/python3 /root/mon/monitoring.py
+
+```
 
 в) пример верно сформированного 'YY-MM-DD-awesome-monitoring.log', имеющий не менее 5 записей
 
-текущий репозиторий
+```
+
+{"timestamp": 1699963561, "uptime": 9824.99, "load_avg": ["0.04", "0.07", "0.03"], "memory_total_kb": 2014480.0, "network_connections": 18, "cpu_count": 2, "swap_size_kb": 0}
+{"timestamp": 1699963622, "uptime": 9885.05, "load_avg": ["1.43", "0.43", "0.15"], "memory_total_kb": 2014480.0, "network_connections": 18, "cpu_count": 2, "swap_size_kb": 0}
+{"timestamp": 1699963681, "uptime": 9944.11, "load_avg": ["0.61", "0.38", "0.15"], "memory_total_kb": 2014480.0, "network_connections": 18, "cpu_count": 2, "swap_size_kb": 0}
+{"timestamp": 1699963741, "uptime": 10004.15, "load_avg": ["0.38", "0.34", "0.15"], "memory_total_kb": 2014480.0, "network_connections": 18, "cpu_count": 2, "swap_size_kb": 0}
+{"timestamp": 1699963801, "uptime": 10064.2, "load_avg": ["0.14", "0.28", "0.14"], "memory_total_kb": 2014480.0, "network_connections": 18, "cpu_count": 2, "swap_size_kb": 0}
+{"timestamp": 1699963861, "uptime": 10124.25, "load_avg": ["0.05", "0.22", "0.13"], "memory_total_kb": 2014480.0, "network_connections": 18, "cpu_count": 2, "swap_size_kb": 0}
+{"timestamp": 1699963921, "uptime": 10184.94, "load_avg": ["0.17", "0.24", "0.14"], "memory_total_kb": 2014480.0, "network_connections": 19, "cpu_count": 2, "swap_size_kb": 0}
+{"timestamp": 1699963981, "uptime": 10245.0, "load_avg": ["0.06", "0.19", "0.13"], "memory_total_kb": 2014480.0, "network_connections": 18, "cpu_count": 2, "swap_size_kb": 0}
+{"timestamp": 1699964042, "uptime": 10305.05, "load_avg": ["0.02", "0.16", "0.11"], "memory_total_kb": 2014480.0, "network_connections": 18, "cpu_count": 2, "swap_size_kb": 0}
+
+```
 
 
 ---
